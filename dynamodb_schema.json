@@ -1,0 +1,90 @@
+{
+  "TableName": "ServerlessBackendTable",
+  "BillingMode": "PAY_PER_REQUEST",
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "id",
+      "AttributeType": "S"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "id",
+      "KeyType": "HASH"
+    }
+  ],
+  "Tags": [
+    {
+      "Key": "Project",
+      "Value": "ServerlessBackend"
+    },
+    {
+      "Key": "Environment",
+      "Value": "Prototype"
+    },
+    {
+      "Key": "Purpose",
+      "Value": "Architecture-Demonstration"
+    }
+  ],
+  "PointInTimeRecoverySpecification": {
+    "PointInTimeRecoveryEnabled": false
+  },
+  "SSESpecification": {
+    "Enabled": true,
+    "SSEType": "KMS"
+  },
+  "_comment_table_design": "This schema demonstrates understanding of DynamoDB design patterns",
+  "_comment_billing": "PAY_PER_REQUEST chosen for prototype to avoid provisioning complexity and cost",
+  "_comment_key_design": "Single partition key (id) for simple access pattern. Production might add sort key for complex queries",
+  "_comment_attributes": "Only keys defined here. DynamoDB is schemaless - other attributes added dynamically",
+  "_comment_encryption": "SSE enabled by default for security best practice",
+  "_comment_backup": "Point-in-time recovery disabled for prototype. Would enable in production",
+  "_design_notes": {
+    "partition_key": {
+      "attribute": "id",
+      "type": "String",
+      "purpose": "Uniquely identifies each item. Single-item access pattern.",
+      "why_string": "Flexibility for UUID, custom IDs, composite keys as strings"
+    },
+    "no_sort_key": {
+      "reason": "Simple CRUD operations don't require range queries",
+      "production_enhancement": "Could add sort_key for time-series data or hierarchical access"
+    },
+    "billing_mode": {
+      "choice": "PAY_PER_REQUEST",
+      "why": "No need to provision read/write capacity units. Pay only for actual usage.",
+      "when_to_change": "If sustained high throughput, PROVISIONED mode with auto-scaling is cheaper"
+    },
+    "security": {
+      "encryption_at_rest": "Enabled via SSESpecification",
+      "encryption_in_transit": "Automatic via HTTPS API calls",
+      "access_control": "IAM policies (see iam/lambda-policy.json)"
+    },
+    "indexes": {
+      "global_secondary_indexes": "None in prototype",
+      "local_secondary_indexes": "None in prototype",
+      "production_consideration": "Add GSI for query patterns like querying by created_at or data fields"
+    },
+    "streams": {
+      "enabled": false,
+      "production_use_case": "Enable DynamoDB Streams to trigger Lambda for event-driven workflows"
+    }
+  },
+  "_production_enhancements": [
+    "Enable Point-in-Time Recovery for disaster recovery",
+    "Add Global Secondary Index for alternate query patterns",
+    "Enable DynamoDB Streams for change data capture",
+    "Configure auto-scaling if using PROVISIONED billing",
+    "Add TTL attribute for automatic item expiration",
+    "Set up CloudWatch alarms for throttling events",
+    "Implement backup strategy with automated snapshots",
+    "Consider Global Tables for multi-region replication"
+  ],
+  "_interview_talking_points": {
+    "key_design": "I chose a simple partition key because the access pattern is straightforward CRUD by ID. For more complex queries, I'd add a sort key or GSI.",
+    "billing": "PAY_PER_REQUEST makes sense for a prototype and variable workloads. For predictable traffic, PROVISIONED with auto-scaling is more cost-effective.",
+    "security": "Encryption at rest is enabled by default. Access is controlled via IAM policies that enforce least privilege.",
+    "scalability": "DynamoDB auto-scales to handle traffic. No capacity planning needed with on-demand mode."
+  }
+}

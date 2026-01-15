@@ -1,0 +1,102 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DynamoDBTableAccess",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Scan",
+        "dynamodb:Query"
+      ],
+      "Resource": "arn:aws:dynamodb:us-east-1:ACCOUNT_ID:table/ServerlessBackendTable",
+      "_comment_least_privilege": "Only grants permissions needed for CRUD operations on this specific table",
+      "_comment_no_wildcards": "Notice Resource is specific table ARN, not dynamodb:* or table/*",
+      "_comment_actions": "Only includes actions Lambda actually uses. No admin actions like CreateTable, DeleteTable"
+    },
+    {
+      "Sid": "CloudWatchLogsAccess",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:us-east-1:ACCOUNT_ID:log-group:/aws/lambda/serverless-backend:*",
+      "_comment_logging": "Lambda needs these permissions to write logs to CloudWatch",
+      "_comment_scope": "Limited to specific log group for this function"
+    }
+  ],
+  "_security_principles_demonstrated": {
+    "least_privilege": {
+      "description": "Grant only permissions required for function to operate",
+      "implementation": [
+        "Specific table ARN, not wildcard",
+        "Only CRUD actions, no admin actions",
+        "Scoped to single log group"
+      ]
+    },
+    "explicit_deny": {
+      "note": "Anything not explicitly allowed is denied by default",
+      "examples_of_denied_actions": [
+        "dynamodb:CreateTable",
+        "dynamodb:DeleteTable",
+        "dynamodb:DescribeTable",
+        "s3:* (no S3 access)",
+        "lambda:* (cannot modify itself)"
+      ]
+    },
+    "resource_scoping": {
+      "principle": "Specify exact resources, avoid wildcards",
+      "why": "Prevents accidental access to other tables or resources",
+      "example": "ServerlessBackendTable only, not all DynamoDB tables"
+    }
+  },
+  "_what_this_prevents": {
+    "data_breaches": "Function cannot access other DynamoDB tables or databases",
+    "privilege_escalation": "Function cannot modify IAM roles or policies",
+    "lateral_movement": "Function cannot access S3, EC2, or other AWS services",
+    "accidental_deletion": "Function cannot delete the table itself, only items",
+    "cost_overruns": "Function cannot provision new resources"
+  },
+  "_production_enhancements": {
+    "condition_keys": "Add Condition blocks for additional security (IP restrictions, MFA, time-based access)",
+    "encryption": "Add kms:Decrypt permission if using custom KMS keys for DynamoDB",
+    "vpc_access": "Add ec2:CreateNetworkInterface permissions if Lambda runs in VPC",
+    "secrets_manager": "Add secretsmanager:GetSecretValue if function needs to retrieve secrets",
+    "cross_account": "Use aws:PrincipalOrgID condition to prevent cross-account access",
+    "resource_tags": "Use dynamodb:ResourceTag conditions to enforce tag-based access control"
+  },
+  "_interview_defense": {
+    "question": "Why not use dynamodb:* for simplicity?",
+    "answer": "That violates least privilege. If Lambda is compromised, attacker could delete tables or access other data. Explicit permissions limit blast radius.",
+    "question": "Why specify table ARN instead of table/*?",
+    "answer": "Wildcards are broader than needed. Specific ARN ensures function can only access this one table, even if naming conventions change.",
+    "question": "What if you need to add a new action?",
+    "answer": "I'd add only that specific action (e.g., dynamodb:BatchWriteItem) and document why it's needed. Never add broad permissions preemptively."
+  },
+  "_real_world_scenario": {
+    "development": "Dev environment might use broader permissions for faster iteration",
+    "staging": "Staging matches production permissions exactly",
+    "production": "Strictest permissions. Changes require security review.",
+    "monitoring": "CloudWatch alarms for unauthorized API calls (AccessDenied errors)"
+  },
+  "_trust_relationship": {
+    "note": "This policy attaches to Lambda execution role. Trust policy allows Lambda service to assume role.",
+    "trust_policy_example": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "lambda.amazonaws.com"
+          },
+          "Action": "sts:AssumeRole"
+        }
+      ]
+    }
+  }
+}
